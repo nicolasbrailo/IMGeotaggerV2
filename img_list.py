@@ -11,6 +11,7 @@ class Img_List(gtk.TreeView):
         self.elements = gtk.ListStore(Img_List.UI_Image, gtk.gdk.Pixbuf, str)
         gtk.TreeView.__init__(self, self.elements)
 
+        self.set_can_focus(True)
         self.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
 
         #cell renderers for image and image name

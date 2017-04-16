@@ -38,7 +38,10 @@ class CEFBrowser(object):
         self.exiting = False
         self.window = parent_window
 
-        self.window.connect('focus-in-event', self._on_focus_in)
+        # TODO: This breaks the focus for the treeview (so, multiple elements 
+        # can't be selected). Not sure what's going on but commenting this out
+        # doesn't seem to seriously break anything.
+        #self.window.connect('focus-in-event', self._on_focus_in)
         self.window.connect('configure-event', self._on_configure)
         self.window.connect('destroy', self._on_exit)
         self.window.layout.connect('size-allocate', self._on_layout_size_allocate)
