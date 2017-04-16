@@ -160,7 +160,11 @@ class Img_List(gtk.TreeView):
             mouse_over_row = self._treeview_obj.get_path_at_pos(\
                                         self._tooltip_position[0], \
                                         self._tooltip_position[1])
-            tree_path = mouse_over_row[0]
-            self._tooltip_active = True
-            self._on_tooltip_triggered(tree_path)
+            try:
+                tree_path = mouse_over_row[0]
+                self._tooltip_active = True
+                self._on_tooltip_triggered(tree_path)
+            except:
+                # TODO: Sometimes there's a tooltip request that fails
+                pass
 
