@@ -31,7 +31,7 @@ class CEFBrowser(object):
     # This is used to trigger a JS hack that loads a crosshair. It's not very
     # clean, but it works. May be cleaner to replace this with an OnLoad callback
     # but I have no idea how that works in CEF...
-    MAP_LOAD_TIME = 2000
+    MAP_LOAD_TIME = 4000
 
     def __init__(self, parent_window, start_url):
         self.browser = None
