@@ -9,6 +9,9 @@ class Wnd(gtk.Window):
         self.set_title('IMGeotagger revived')
         self.realize()
 
+        self.current_pos = gtk.Label()
+        self.current_pos.set_use_markup(gtk.TRUE)
+
         self.img_list = Img_List('/home/laptus/Fotos/00to_tag/Gato/')
         self.img_list.get_selection().connect('changed', self.on_image_selection)
 
@@ -17,6 +20,7 @@ class Wnd(gtk.Window):
 
         img_select_layout = gtk.VBox(False, 0)
         img_select_layout.set_size_request(width=self.get_pane_width(), height=0)
+        img_select_layout.pack_start(self.current_pos, False, False, 2)
         img_select_layout.pack_start(self.img_ctrl, False, False, 2)
         img_select_layout.pack_start(self.img_list.get_ui_element(), True, True, 0)
 
@@ -43,9 +47,23 @@ class Wnd(gtk.Window):
 
     def callback_set_gps_pos_requested(self):
         coords = Wnd.hack_coords_from_gmaps(self.browser.get_url())
+        if coords is None:
+            print "Fatal error: the URL format for Google maps has changed and " + \
+                  "this program can't understand it. Unknown URL: {0}".format(map_path)
+            exit(1)
+
         print "Setting selection to " + str(coords)
         for img in self.img_list.get_current_selection():
              img.set_position(coords)
+        self.img_list.notify_elements_updated()
+
+    def maybe_update_coords(self, url):
+        if url:
+            coords = Wnd.hack_coords_from_gmaps(url)
+            if coords:
+                self.current_pos.set_markup('Position: ' + str(coords))
+                return
+        self.current_pos.set_markup('Position: ???')
 
     def on_image_selection(self, widget, data=None):
         self.img_ctrl.on_images_selected(self.img_list.get_current_selection())
@@ -61,9 +79,7 @@ class Wnd(gtk.Window):
         lon_end = map_path.find(',', lon_pos)
         
         if (lat_pos < 0) or (lat_end < 0) or (lon_pos < 0) or (lon_end < 0):
-            print "Fatal error: the URL format for Google maps has changed and " + \
-                  "this program can't understand it. Unknown URL: {0}".format(map_path)
-            exit(1)
+            return None
 
         return (float(map_path[lat_pos:lat_end]), float(map_path[lon_pos:lon_end]))
 

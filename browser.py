@@ -28,10 +28,7 @@ MESSAGE_LOOP_CEF = 2  # Pass --message-loop-cef flag to script on Linux
 g_message_loop = None
 
 class CEFBrowser(object):
-    # This is used to trigger a JS hack that loads a crosshair. It's not very
-    # clean, but it works. May be cleaner to replace this with an OnLoad callback
-    # but I have no idea how that works in CEF...
-    MAP_LOAD_TIME = 4000
+    HACKS_TIMEOUT_MS = 1000
 
     def __init__(self, parent_window, start_url):
         self.browser = None
@@ -50,7 +47,7 @@ class CEFBrowser(object):
         self._embed_browser(start_url)
         self.window.show()
         self.window.register_browser(self)
-        gobject.timeout_add(CEFBrowser.MAP_LOAD_TIME, self._hack_crosshair)
+        gobject.timeout_add(CEFBrowser.HACKS_TIMEOUT_MS, self._hacks)
         if g_message_loop == MESSAGE_LOOP_TIMER:
             gobject.timeout_add(10, self._on_timer)
 
@@ -112,22 +109,35 @@ class CEFBrowser(object):
         elif MAC:
             return self.window.window.nsview
 
+    def _hacks(self):
+        self._hack_crosshair()
+        self._hack_update_pos()
+        # Tell gobject we need to trigger this callback again
+        return True
+
     def _hack_crosshair(self):
         """ Show a crosshair in the middle of the page """
         hack = "" + \
+               "if (!document.getElementById('hack_crosshair')) {" + \
                "var img = document.createElement('img');" + \
+               "img.id = 'hack_crosshair';" + \
                "img.src = 'https://github.com/nicolasbrailo/IMGeotaggerV2/blob/master/crosshair.png?raw=true';" + \
                "img.style.position='absolute';" + \
                "img.style.left='50%';" + \
                "img.style.marginLeft='-24px';" + \
                "img.style.top='50%';" + \
                "img.style.marginTop='-24px';" + \
-               "document.body.appendChild(img);"
-        self.browser.GetMainFrame().ExecuteJavascript(hack)
-        # Tell gobject we don't need to trigger this callback again
-        return False
+               "document.body.appendChild(img);" + \
+               "}"
+        if self.browser is not None:
+            self.browser.GetMainFrame().ExecuteJavascript(hack)
+    
+    def _hack_update_pos(self):
+        self.window.maybe_update_coords(self.get_url())
 
     def get_url(self):
+        if self.browser is None:
+            return None
         return self.browser.GetUrl()
 
     def clear_browser_references(self):

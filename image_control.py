@@ -29,9 +29,12 @@ class Image_Control(gtk.VBox):
             self.on_selection_cleared()
             return
         elif (len(img_list) == 1):
+            pos = img_list[0].get_position() 
+            if pos is None:
+                pos = 'Not set'
             self.lbl_img_info.set_markup('<b>Filename: ' + img_list[0].get_fname() + '\n' + \
                                             'Date:     ' + img_list[0].get_date() + '\n' + \
-                                            'Position: ' + img_list[0].get_position() + '</b>')
+                                            'Position: ' + pos + '</b>')
         else:
             self.lbl_img_info.set_markup('<b>Filename: Multiple\n' + \
                                             'Date:     ---\n' + \

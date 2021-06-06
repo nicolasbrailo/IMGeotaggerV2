@@ -8,7 +8,8 @@ class Img_List(gtk.TreeView):
     """ List of images in a path """
 
     def __init__(self, start_path):
-        self.elements = gtk.ListStore(Img_List.UI_Image, gtk.gdk.Pixbuf, str)
+        self._allowed_extensions = ['JPG', 'JPEG', 'PNG']
+        self.elements = gtk.ListStore(Img_List.UI_Image, gtk.gdk.Pixbuf, str, str)
         gtk.TreeView.__init__(self, self.elements)
 
         self.set_can_focus(True)
@@ -17,8 +18,10 @@ class Img_List(gtk.TreeView):
         #cell renderers for image and image name
         column_pixbuf = gtk.TreeViewColumn('Image', gtk.CellRendererPixbuf(), pixbuf=1)
         self.append_column(column_pixbuf)
-        column_text = gtk.TreeViewColumn('Name', gtk.CellRendererText(), text=2)
+        column_text = gtk.TreeViewColumn('GPS', gtk.CellRendererText(), text=2)
         self.append_column(column_text)
+        column_text2 = gtk.TreeViewColumn('Name', gtk.CellRendererText(), text=3)
+        self.append_column(column_text2)
 
         # Provide a nice scrollable window for the users convenience but still extend
         # a TreeView: most of the functionality a caller would need is in there, so
@@ -74,8 +77,10 @@ class Img_List(gtk.TreeView):
         lst.sort()
         images = list()
         for filename in lst:
-            if filename.upper().endswith('JPG') or filename.upper().endswith('PNG'):
-                images.append(os.path.join(path, filename))
+            for ext in self._allowed_extensions:
+                if filename.upper().endswith(ext.upper()):
+                    images.append(os.path.join(path, filename))
+                    break
 
         loader = self._load_elements(images)
         glib.idle_add(loader.next)
@@ -99,14 +104,24 @@ class Img_List(gtk.TreeView):
       # stop idle_add()
       yield False
 
+    def notify_elements_updated(self):
+        (model, selection) = self.get_selection().get_selected_rows()
+        for i in selection:
+            row = self.elements[model.get_iter(i)]
+            row[2] = row[0]._has_position()
+
     class UI_Image(gobject.GObject):
         def __init__(self, path):
             gobject.GObject.__init__(self)
             self.path = path
-            self.pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(self.path, 64, 64)
+            try:
+                self.pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(self.path, 64, 64)
+            except:
+                self.pixbuf = None
+                print("Error loading " + path)
 
         def get_as_treeview_element(self):
-            return [self, self.get_thumb(), self._get_name()]
+            return [self, self.get_thumb(), self._has_position(), self._get_name()]
 
         def as_image(self):
             return Image(self.path, self._get_name())
@@ -115,7 +130,13 @@ class Img_List(gtk.TreeView):
             return self.pixbuf
 
         def get_preview(self):
-            return gtk.gdk.pixbuf_new_from_file_at_size(self.path, 500, 500)
+            try:
+                return gtk.gdk.pixbuf_new_from_file_at_size(self.path, 500, 500)
+            except:
+                print("Error loading " + self.path)
+
+        def _has_position(self):
+            return '' if self.as_image().get_position() is None else 'X'
 
         def _get_name(self):
             return os.path.splitext(os.path.basename(self.path))[0]

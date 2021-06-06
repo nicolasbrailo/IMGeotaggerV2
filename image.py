@@ -35,7 +35,7 @@ class Image(object):
                                 Image._sex_to_dec(self._metadata[lon_key].value),
                                 self._metadata[lon_key_ref].raw_value)
         except KeyError:
-            return 'Not set'
+            return None
 
         return lat + ' ' + lon
 
